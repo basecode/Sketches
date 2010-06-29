@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Sketches</title>
+    <meta name="viewport" content="width=device-width; height=device-height; initial-scale=1; maximum-scale=1; user-scalable=0;"> 
+    <meta name="apple-mobile-web-app-capable" content="yes"> 
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+    <style type="text/css">
+        body {
+            background:#000;
+            margin:0;
+            font:12px Thonburi;
+        }
+        header, footer {
+            padding:1% 0.5%;
+            overflow:auto;
+            width:99%;
+            height:4%;
+        }
+        header {
+            border-bottom:2px dotted #444;
+            position:absolute;
+            top:0;
+            left:0;
+        }
+        footer {
+            border-top:2px dotted #444;
+            position:absolute;
+            bottom:0;
+            left:0;
+        }
+        a {
+            text-decoration:none;
+        }
+        a.button {
+            color:#ddd;
+            font-weight:bold;
+            padding:0.5% 0.7%;
+            border:1px solid #ddd;
+            border-radius:5px;
+            margin:0 0.5em;
+        }
+        a.button+a.color {
+            padding:0.5%;
+        }
+        .left {
+            float:left;
+        }
+        .right {
+            float:right;
+        }
+        a.button+a.color div {
+            padding:0 0.6em;
+            border-radius:2px;
+        }
+        #canvasContainer {
+            position:absolute;
+            top:8%;
+            left:0;
+            width:100%;
+            height:84%;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <a class="button left" href="">My Sketches</a>
+        <a class="button left" href="">Share</a>
+        <a id="red" class="button color right" href=""><div style="background:red;">&nbsp;</div></a>
+        <a id="white" class="button color right" href=""><div style="background:white;">&nbsp;</div></a>
+    </header>
+    
+    <div id="canvasContainer"></div>
+    
+    <footer>
+        <a id="clear" class="button left" href="">Clear</a>
+        <a id="undo" class="button left" href="">Undo</a>
+        <a class="button color right" href="">+ New</a>
+    </footer>
+    
+    <script type="text/javascript">
+    
+        window.addEventListener('load', function() {
+        
+            var container = document.getElementById('canvasContainer'),
+                settings = {lineWidth:7, lineCap:'round', lineJoin:'round', strokeStyle:'white'};
+            
+            container.setCanvasFrame = function(canvasElement) {
+                canvasElement.setAttribute("width", this.clientWidth + "px");
+                canvasElement.setAttribute("height", this.clientHeight + "px");
+                return this;
+            }
+            container.setCanvasZIndex = function(canvasElement) {
+                canvasElement.setAttribute("style", "position:absolute;z-index:"+this.childNodes.length+";");
+                return this;
+            }
+            container.getXPosition = function(event) {
+                return (event.touches) ? event.touches[0].pageX-this.offsetLeft : event.clientX-this.offsetLeft;
+            }
+            container.getYPosition = function(event) {
+                return (event.touches) ? event.touches[0].pageY-this.offsetTop : event.clientY-this.offsetTop;
+            }
+            
+            container.onmousedown = container.ontouchstart = function(event) {
+                event.preventDefault();
+                var canvas = document.createElement('canvas');
+                this.setCanvasFrame(canvas).setCanvasZIndex(canvas).appendChild(canvas);
+                
+                canvas.draw = true;
+                canvas.ctx = canvas.getContext('2d');
+                canvas.ctx.lineWidth = ""+settings.lineWidth;
+                canvas.ctx.lineCap = ""+settings.lineCap;
+                canvas.ctx.lineJoin = ""+settings.lineJoin;
+                canvas.ctx.strokeStyle = ""+settings.strokeStyle;
+                canvas.ctx.beginPath();
+                canvas.ctx.moveTo(this.getXPosition(event), this.getYPosition(event));
+                canvas.ctx.lineTo(this.getXPosition(event), this.getYPosition(event));
+                canvas.ctx.stroke();
+                canvas.onmousemove = canvas.ontouchmove = function(event) {
+                    event.preventDefault();
+                    if (!this.draw) return;
+                    canvas.ctx.lineTo(container.getXPosition(event), container.getYPosition(event));
+                    canvas.ctx.stroke();
+                }
+                
+                canvas.onmouseup = canvas.ontouchcancel = canvas.ontouchend = function(event) {
+                    event.preventDefault();
+                    canvas.ctx.closePath();
+                    this.draw = false;
+                }
+            }
+            
+            document.getElementById('clear').addEventListener('click', function(event) {
+                event.preventDefault();
+                if (!container.hasChildNodes()) return;
+                while (container.hasChildNodes()) {
+                    container.removeChild(container.lastChild);
+                }
+            }, false);
+            
+            document.getElementById('undo').addEventListener('click', function(event) {
+                event.preventDefault();
+                if (!container.hasChildNodes()) return;
+                container.removeChild(container.lastChild);
+            }, false);
+            
+            document.getElementById('red').addEventListener('click', function(event) {
+                event.preventDefault();
+                settings.strokeStyle = 'red';
+            }, false);
+        
+            document.getElementById('white').addEventListener('click', function(event) {
+                event.preventDefault();
+                settings.strokeStyle = 'white';
+            }, false);
+    
+        }, true);
+    
+    
+    </script>
+
+</body>
+
+</html>
