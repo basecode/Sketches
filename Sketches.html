@@ -15,7 +15,7 @@
             font:12px Thonburi;
         }
         header, footer {
-            padding:1% 0.5%;
+            padding:1em 0.5em;
             overflow:auto;
             width:99%;
             height:4%;
@@ -71,32 +71,98 @@
     <header>
         <a class="button left" href="">My Sketches</a>
         <a class="button left" href="">Share</a>
-        <a id="red" class="button color right" href=""><div style="background:red;">&nbsp;</div></a>
-        <a id="white" class="button color right" href=""><div style="background:white;">&nbsp;</div></a>
+        <a settings='{"lineWidth":30,"strokeStyle":"black"}' class="button color right" href=""><div style="background:black;">&nbsp;</div></a>
+        <a settings='{"strokeStyle":"red"}' class="button color right" href=""><div style="background:red;">&nbsp;</div></a>
+        <a settings='{"strokeStyle":"white"}' class="button color right" href=""><div style="background:white;">&nbsp;</div></a>
     </header>
     
-    <div id="canvasContainer"></div>
+    <div id="canvasContainer">
+        <canvas id="drawingArea"></canvas>
+    </div>
     
     <footer>
         <a id="clear" class="button left" href="">Clear</a>
-        <a id="undo" class="button left" href="">Undo</a>
-        <a class="button color right" href="">+ New</a>
+        <a id="undo" class="button left" href=""><img style="vertical-align:middle;padding-right:5px;" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHg9IjBweCIgeT0iMHB4IiB3aWR0aD0iMTVweCIgaGVpZ2h0PSIxNXB4IiB2aWV3Qm94PSIwIDEgMTAgMTAiPjxwYXRoIHN0eWxlPSJmaWxsOiNGRkY7c3Ryb2tlOiNGRkY7c3Ryb2tlLXdpZHRoOjAuNDsiIGQ9Ik00LjQ3LDEuMDRDNS41NiwwLjgsNi41NywwLjk5LDcuNTEsMS42czEuNTMsMS40NiwxLjc2LDIuNTVjMC4yNCwxLjEsMC4wNSwyLjExLTAuNTUsMy4wNUM4LjExLDguMTQsNy4yNyw4LjczLDYuMTgsOC45N0M1LjEzLDkuMTksNC4xMSw5LjAxLDMuMTMsOC40MWwwLjQzLTAuNjhjMC43OSwwLjQ4LDEuNiwwLjYyLDIuNDQsMC40NGMwLjg3LTAuMTksMS41NS0wLjY2LDIuMDMtLjQxQzguNTIsNi4wMSw4LjY3LDUuMiw4LjQ4LDQuMzJDOC4yOSwzLjQ1LDcuODIsMi43Nyw3LjA3LDIuMjhTNS41MSwxLjY0LDQuNjQsMS44M0MzLjc3LDIuMDIsMy4wOCwyLjUyLDIuNTcsMy4zMkwzLjkzLDQuMkwxLjE0LDQuOEwwLjUzLDJsMS4zNiwwLjg4QzIuNTEsMS44OSwzLjM3LDEuMjcsNC40NywxLjA0eiIvPjwvc3ZnPg==">Undo</a>
+        <a id="new" class="button right" href="">+ New</a>
     </footer>
     
     <script type="text/javascript">
     
-        window.addEventListener('load', function() {
-        
-            var container = document.getElementById('canvasContainer'),
-                settings = {lineWidth:7, lineCap:'round', lineJoin:'round', strokeStyle:'white'};
+        NodeList.prototype.addEventListener = function(type, listener, useCapture) {
+            for (var i = 0; i < this.length; i++) {
+                this[i].addEventListener(type, listener, useCapture);
+            }
+        }
             
-            container.setCanvasFrame = function(canvasElement) {
-                canvasElement.setAttribute("width", this.clientWidth + "px");
-                canvasElement.setAttribute("height", this.clientHeight + "px");
+        /*var cmdPressed = 0;
+        window.addEventListener('keydown', function(e){
+            if (cmdPressed && e.keyCode == 90 && !!document.getElementById('undo')) {
+                e.preventDefault();
+                document.getElementById('undo').click();
+            }
+            if(e.keyCode == 91) {
+                cmdPressed = 1;
+            }
+        });
+        window.addEventListener('keyup', function(e){
+            if(e.keyCode == 91) {
+                cmdPressed = 0;
+            }
+        });*/
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            var container = document.getElementById('canvasContainer'),
+                canvas = document.getElementById('drawingArea'),
+                settings = {
+                    s:{},
+                    init:function() {
+                        this.reset();
+                    },
+                    reset:function() {
+                        this.s = {lineWidth:7, lineCap:'round', lineJoin:'round', strokeStyle:'white'};
+                    },
+                    setter:function(newSettings) {
+                        this.reset();
+                        for (var i in newSettings) {
+                            this.s[i] = newSettings[i];
+                        }
+                    } 
+                },
+                history = {
+                    stack:window['sessionStorage'],
+                    pop:function() {
+                        var name = 'layer'+(this.stack.length-1),
+                            value = this.stack.getItem(name);
+                        this.stack.removeItem(name);
+                        return value;
+                    },
+                    push:function(value) {
+                        this.stack.setItem('layer'+this.stack.length, value);
+                    },
+                    purge:function() {
+                        this.stack.clear();
+                    }
+                };
+
+            canvas.ctx = canvas.getContext('2d');
+            
+            
+            history.purge();
+            settings.init();
+
+            canvas.setFrame = function(container) {
+                this.setAttribute("width", container.clientWidth + "px");
+                this.setAttribute("height", container.clientHeight + "px");
                 return this;
             }
-            container.setCanvasZIndex = function(canvasElement) {
-                canvasElement.setAttribute("style", "position:absolute;z-index:"+this.childNodes.length+";");
+            canvas.setZIndex = function(container) {
+                this.setAttribute("style", "position:absolute;z-index:"+container.childNodes.length+";");
+                return this;
+            }
+            canvas.fillRect = function(color) {
+                this.ctx.fillStyle = color;
+                this.ctx.fillRect(0, 0, this.width, this.height);
                 return this;
             }
             container.getXPosition = function(event) {
@@ -108,15 +174,13 @@
             
             container.onmousedown = container.ontouchstart = function(event) {
                 event.preventDefault();
-                var canvas = document.createElement('canvas');
-                this.setCanvasFrame(canvas).setCanvasZIndex(canvas).appendChild(canvas);
-                
+                history.push(canvas.toDataURL('image/jpeg'));
+
                 canvas.draw = true;
-                canvas.ctx = canvas.getContext('2d');
-                canvas.ctx.lineWidth = ""+settings.lineWidth;
-                canvas.ctx.lineCap = ""+settings.lineCap;
-                canvas.ctx.lineJoin = ""+settings.lineJoin;
-                canvas.ctx.strokeStyle = ""+settings.strokeStyle;
+                canvas.ctx.lineWidth = ""+settings.s.lineWidth;
+                canvas.ctx.lineCap = ""+settings.s.lineCap;
+                canvas.ctx.lineJoin = ""+settings.s.lineJoin;
+                canvas.ctx.strokeStyle = ""+settings.s.strokeStyle;
                 canvas.ctx.beginPath();
                 canvas.ctx.moveTo(this.getXPosition(event), this.getYPosition(event));
                 canvas.ctx.lineTo(this.getXPosition(event), this.getYPosition(event));
@@ -137,27 +201,36 @@
             
             document.getElementById('clear').addEventListener('click', function(event) {
                 event.preventDefault();
-                if (!container.hasChildNodes()) return;
-                while (container.hasChildNodes()) {
-                    container.removeChild(container.lastChild);
-                }
+                history.push(canvas.toDataURL('image/jpeg'));
+                canvas.ctx.clearRect(0, 0, canvas.width, canvas.height);
+
             }, false);
             
             document.getElementById('undo').addEventListener('click', function(event) {
                 event.preventDefault();
-                if (!container.hasChildNodes()) return;
-                container.removeChild(container.lastChild);
+                var dataUrl = history.pop(),
+                    image = new Image();
+                image.src = dataUrl;
+                image.width = canvas.width;
+                image.height = canvas.height;
+                image.onload = function(){
+                    canvas.ctx.drawImage(image,0,0);
+                }
             }, false);
             
-            document.getElementById('red').addEventListener('click', function(event) {
+            document.getElementById('new').addEventListener('click', function(event) {
                 event.preventDefault();
-                settings.strokeStyle = 'red';
+                history.purge();
+                canvas.ctx.clearRect(0, 0, canvas.width, canvas.height);
+
             }, false);
-        
-            document.getElementById('white').addEventListener('click', function(event) {
+            
+            document.querySelectorAll('a.button.color').addEventListener('click', function(event) {
                 event.preventDefault();
-                settings.strokeStyle = 'white';
+                settings.setter(JSON.parse(this.getAttribute('settings')));
             }, false);
+            
+            canvas.setFrame(container).fillRect('#000');
     
         }, true);
     
